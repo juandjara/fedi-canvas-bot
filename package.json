@@ -5,10 +5,13 @@
     "bun-types": "latest"
   },
   "dependencies": {
-    "hono": "^2.2.5"
+    "cheerio": "^1.0.0-rc.12",
+    "hono": "^2.2.5",
+    "ioredis": "^5.3.2"
   },
   "scripts": {
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "bot": "bun run src/bot.ts"
   },
   "module": "src/index.js"
 }
