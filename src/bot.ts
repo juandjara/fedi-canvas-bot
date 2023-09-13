@@ -1,70 +1,55 @@
-import { load } from 'cheerio'
-
-const MASTODON_API_URL = Bun.env.MASTODON_API_URL
-const ACCESS_TOKEN = Bun.env.ACCESS_TOKEN
+import checkAPIHealth from "./utils/checkAPIHealth"
+import createJWT from "./utils/createJWT"
+import createToot from "./utils/createToot"
+import getCanvas from "./utils/getCanvas"
+import getNotificationStream from "./utils/getNotificationStream"
+import postPixel from "./utils/postPixel"
+import processMentionHTML from "./utils/processMentionHTML"
+import uploadImage from "./utils/uploadImage"
 
 async function main() {
-  const healthURL = `${MASTODON_API_URL}/streaming/health`
-  const healthResponse = await fetch(healthURL)
-  if (!healthResponse.ok) {
-    throw new Error(`Failed to connect to ${healthURL}`)
-  } else {
-    console.log(`Connected to ${healthURL}`)
-  }
+  await checkAPIHealth()
 
-  const notificationURL = `${MASTODON_API_URL}/streaming/user/notification`
-  const notificationResponse = await fetch(notificationURL, {
-    headers: {
-      Authorization: `Bearer ${ACCESS_TOKEN}`,
-      'User-Agent': 'FediCanvas bot v0.0.1'
-    },
-  })
+  const stream = await getNotificationStream()
+  const reader = stream.getReader()
 
-  if (!notificationResponse.ok) {
-    throw new Error(`Failed to connect to ${notificationURL}`)
-  } else {
-    console.log(`Connected to ${notificationURL}`)
-  }
-
-  const reader = notificationResponse.body.getReader()
   while (true) {
     const { done, value } = await reader.read();
-    processChunk(value)
+    await processChunk(value)
     if (done) {
       return
     }
   }
 }
 
-function processChunk(value: Uint8Array) {
+async function processChunk(value: Uint8Array) {
   const lines = Buffer.from(value).toString().split('\n')
-  lines.forEach(processChunkLine)
+  for (const line of lines) {
+    await processChunkLine(line)
+  }
 }
 
-function processChunkLine(line: string) {
+async function processChunkLine(line: string) {
   if (!line) {
     return
   }
 
   if (line.startsWith('data:')) {
-    console.log('received data line')
     const data = line.replace('data:', '').trim()
     try {
       const jsonData = JSON.parse(data)
       if (jsonData?.type === 'mention') {
-        const html = jsonData.status.content
-        const params = processHTML(html)
-        if (params) {
-          const { x, y, color } = params
-          // call fedicanvas api with these params
-          // TODO
+        const id = jsonData.status.id
+        const content = jsonData.status.content
+        const account = jsonData.account.acct
+        console.log('proccesing mention with data', { id, account, content })
 
-          // reply to mention with api response
-          // TODO
-        }
+        await processMention({ id, account, content })
+      } else {
+        console.log(`data event of type "${jsonData.type}" not processed`)
       }
     } catch (err) {
-      throw new Error('Failed to parse JSON data from event')
+      console.error('Failed to parse JSON data from event')
     }
   } else {
     const text = line.length < 10 ? line : `${line.slice(0, 10)}...` 
@@ -72,24 +57,46 @@ function processChunkLine(line: string) {
   }
 }
 
-function processHTML(html: string) {
-  try {
-    const dom = load(html)
-    const text = dom.text()
-    return processMentionText(text)
-  } catch (err) {
-    throw new Error('Failed to parse HTML from mention content')
-  }
-}
+async function processMention({
+  id, account, content
+}: { id: string; account: string; content: string }) {
+  const data = processMentionHTML(content)
+  if (data) {
+    const { x, y, color } = data
+    try {
+      const jwt = await createJWT(account)
+      const apiResponse = await postPixel({
+        x: Number(x),
+        y: Number(y),
+        color,
+        jwt
+      })
+      if (apiResponse?.timeout) {
+        const toot = {
+          status: `@${account} you can place your again in ${apiResponse.timeout} seconds`,
+          in_reply_to_id: id,
+        }
 
-function processMentionText(text: string) {
-  const [_, command, ...parts] = text.split(' ')
-  if (command === '!pixel') {
-    const [x, y, color] = parts
-    console.log('pixel command received', { x, y, color })
-    return { x, y, color }
-  } else {
-    console.log('command not processed', command)
+        await createToot(toot)
+      } else {
+        const blob = await getCanvas()
+        const uploadParams = {
+          file: blob,
+          description: 'fedicanvas snapshot at ' + new Date().toISOString(),
+        }
+        const uploadId = await uploadImage(uploadParams)
+
+        const toot = {
+          status: `@${account} your pixel was placed at ${x},${y} with color ${color}`,
+          in_reply_to_id: id,
+          media_ids: [uploadId],
+        }
+
+        await createToot(toot)
+      }
+    } catch (err) {
+      console.error('Error processing mention', err)
+    }
   }
 }
 

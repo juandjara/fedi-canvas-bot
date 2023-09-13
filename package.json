@@ -1,17 +1,16 @@
 {
   "version": "1.0.109",
-  "name": "bun-fedicanvas-api-bot",
+  "name": "fedi-canvas-bot",
   "devDependencies": {
     "bun-types": "latest"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
-    "hono": "^2.2.5",
-    "ioredis": "^5.3.2"
+    "ioredis": "^5.3.2",
+    "jose": "^4.14.6"
   },
   "scripts": {
-    "start": "bun run src/index.ts",
     "bot": "bun run src/bot.ts"
   },
-  "module": "src/index.js"
+  "module": "src/bot.ts"
 }
