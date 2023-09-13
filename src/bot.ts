@@ -80,6 +80,8 @@ async function processMention({
         await createToot(toot)
       } else {
         const blob = await getCanvas()
+        blob.type = 'image/png'
+
         const uploadParams = {
           file: blob,
           description: 'fedicanvas snapshot at ' + new Date().toISOString(),

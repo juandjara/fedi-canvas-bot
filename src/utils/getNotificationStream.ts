@@ -13,7 +13,7 @@ export default async function getNotificationStreamReader() {
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to connect to ${notificationURL}`)
+    throw new Error(`Failed to connect to ${notificationURL}:\n  ${response.status} ${response.statusText}`)
   } else {
     console.log(`Connected to ${notificationURL}`)
   }
