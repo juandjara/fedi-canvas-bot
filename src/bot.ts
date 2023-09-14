@@ -7,6 +7,8 @@ import postPixel from "./utils/postPixel"
 import processMentionHTML from "./utils/processMentionHTML"
 import uploadImage from "./utils/uploadImage"
 
+const FEDICANVAS_API_URL = Bun.env.FEDICANVAS_API_URL
+
 async function main() {
   await checkAPIHealth()
 
@@ -87,7 +89,7 @@ async function processMention({
         const uploadId = await uploadImage(uploadParams)
 
         const toot = {
-          status: `@${account} your pixel was placed at ${x},${y} with color ${color}`,
+          status: `@${account} your pixel was placed at ${x},${y} with color ${color}. See more at ${FEDICANVAS_API_URL}`,
           in_reply_to_id: id,
           media_ids: [uploadId],
         }
