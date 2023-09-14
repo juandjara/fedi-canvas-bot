@@ -73,17 +73,15 @@ async function processMention({
       })
       if (apiResponse?.timeout) {
         const toot = {
-          status: `@${account} you can place your again in ${apiResponse.timeout} seconds`,
+          status: `@${account} you can place your pixel again in ${apiResponse.timeout} seconds`,
           in_reply_to_id: id,
         }
 
         await createToot(toot)
       } else {
-        const blob = await getCanvas()
-        blob.type = 'image/png'
-
+        const res = await getCanvas()
         const uploadParams = {
-          file: blob,
+          file: res.body,
           description: 'fedicanvas snapshot at ' + new Date().toISOString(),
         }
         const uploadId = await uploadImage(uploadParams)

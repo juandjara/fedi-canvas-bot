@@ -1,5 +1,5 @@
 type UploadParams = {
-  file: Blob,
+  file: ReadableStream,
   description: string,
 }
 
@@ -10,8 +10,9 @@ const MASTODON_ACCESS_TOKEN = Bun.env.MASTODON_ACCESS_TOKEN
 export default async function uploadImage(params: UploadParams) {
   const { file, description } = params
 
+  const blob = await Bun.readableStreamToBlob(file)
   const form = new FormData()
-  form.append('file', file)
+  form.append('file', blob, 'fedicanvas.png')
   form.append('description', description)
 
   const res = await fetch(`${MASTODON_API_URL}/api/v2/media`, {
@@ -23,7 +24,8 @@ export default async function uploadImage(params: UploadParams) {
   })
 
   if (!res.ok) {
-    throw new Error(`Failed to upload image to mastodon: ${res.status} ${res.statusText}`)
+    const text = await res.text()
+    throw new Error(`Failed to upload image to mastodon:\n  ${res.status} ${res.statusText} \n  ${text}`)
   }
 
   const json = await res.json()

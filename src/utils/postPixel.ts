@@ -26,7 +26,7 @@ export default async function postPixel({ x, y, color, jwt }: {
     const diff = now - lastTime
 
     return {
-      timeout: diff / 1000
+      timeout: Math.ceil(diff / 1000)
     }
   }
 }
