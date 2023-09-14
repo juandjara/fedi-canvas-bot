@@ -2,6 +2,7 @@
   "version": "1.0.109",
   "name": "fedi-canvas-bot",
   "devDependencies": {
+    "@flydotio/dockerfile": "latest",
     "bun-types": "latest"
   },
   "dependencies": {
@@ -10,7 +11,8 @@
     "jose": "^4.14.6"
   },
   "scripts": {
-    "bot": "bun run src/bot.ts"
+    "start": "bun run src/bot.ts"
   },
+  "type": "module",
   "module": "src/bot.ts"
 }
