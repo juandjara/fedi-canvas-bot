@@ -18,7 +18,7 @@ export default function createToot(params: TootParams) {
       status: params.status,
       in_reply_to_id: params.in_reply_to_id,
       media_ids: params.media_ids || [],
-      visibility: 'unlisted',
+      visibility: 'public',
     }),
   })
 }
