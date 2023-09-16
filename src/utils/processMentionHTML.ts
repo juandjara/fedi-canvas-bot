@@ -11,7 +11,7 @@ export default function processMentionHTML(html: string) {
 }
 
 function processMentionText(text: string) {
-  const [_, command, ...parts] = text.split(' ')
+  const [_, command, ...parts] = text.split(/\s+/).filter(Boolean)
   if (command === '!pixel') {
     const [x, y, color] = parts
     return { x, y, color }
